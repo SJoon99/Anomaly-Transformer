@@ -197,6 +197,23 @@ class SMDSegLoader(object):
             return np.float32(self.test[
                               index // self.step * self.win_size:index // self.step * self.win_size + self.win_size]), np.float32(
                 self.test_labels[index // self.step * self.win_size:index // self.step * self.win_size + self.win_size])
+        
+
+class MICROLoader(object):
+    def __init__(self, data_path, win_size, step, mode="train"):
+        self.mode = mode
+        self.step = step
+        self.win_size = win_size
+        self.scaler = StandardScaler()
+        data = np.load(data_path + "/MICRO_train.npy")
+        self.scaler.fit(data)
+        data = self.scaler.transform(data)
+        test_data = np.load(data_path + "/MICRO_test.npy")
+        self.test = self.scaler.transform(test_data)
+        self.train = data
+        data_len = len(self.train)
+        self.val = self.train[(int)(data_len * 0.8):]
+        self.test_labels = np.load(data_path + "/MICRO_test_label.npy")
 
 
 def get_loader_segment(data_path, batch_size, win_size=100, step=100, mode='train', dataset='KDD'):
@@ -208,6 +225,8 @@ def get_loader_segment(data_path, batch_size, win_size=100, step=100, mode='trai
         dataset = SMAPSegLoader(data_path, win_size, 1, mode)
     elif (dataset == 'PSM'):
         dataset = PSMSegLoader(data_path, win_size, 1, mode)
+    elif (dataset == 'MICRO'):
+        dataset = MICROLoader(data_path, win_size, 1, mode)
 
     shuffle = False
     if mode == 'train':
