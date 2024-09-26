@@ -205,15 +205,23 @@ class MICROLoader(object):
         self.step = step
         self.win_size = win_size
         self.scaler = StandardScaler()
-        data = np.load(data_path + "/MICRO_train.npy")
+        data = np.load(data_path + "/syscall_encoded_standardized.npy")
         self.scaler.fit(data)
         data = self.scaler.transform(data)
-        test_data = np.load(data_path + "/MICRO_test.npy")
-        self.test = self.scaler.transform(test_data)
+        # test_data = np.load(data_path + "/MICRO_test.npy")
+        # self.test = self.scaler.transform(test_data)
         self.train = data
         data_len = len(self.train)
         self.val = self.train[(int)(data_len * 0.8):]
-        self.test_labels = np.load(data_path + "/MICRO_test_label.npy")
+        # self.test_labels = np.load(data_path + "/MICRO_test_label.npy")
+    def __len__(self):
+        if self.mode == "train":
+            return (self.train.shape[0] - self.win_size) // self.step + 1
+        
+    def __getitem__(self, index):
+        index = index * self.step
+        if self.mode == "train":
+            return np.float32(self.train[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
 
 
 def get_loader_segment(data_path, batch_size, win_size=100, step=100, mode='train', dataset='KDD'):
@@ -226,7 +234,7 @@ def get_loader_segment(data_path, batch_size, win_size=100, step=100, mode='trai
     elif (dataset == 'PSM'):
         dataset = PSMSegLoader(data_path, win_size, 1, mode)
     elif (dataset == 'MICRO'):
-        dataset = MICROLoader(data_path, win_size, 1, mode)
+        dataset = MICROLoader(data_path, win_size, step, mode)
 
     shuffle = False
     if mode == 'train':
