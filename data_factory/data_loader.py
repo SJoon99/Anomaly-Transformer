@@ -205,26 +205,42 @@ class MICROLoader(object):
         self.step = step
         self.win_size = win_size
         self.scaler = StandardScaler()
-        data = np.load(data_path + "/syscall_onehot_encoded.npy")  # 데이터 로드
+        # data = np.load(data_path + "/syscall_onehot_encoded.npy")
+        data = np.load("MICRO/syscall_onehot_encoded.npy")
         self.scaler.fit(data)
-        data = self.scaler.transform(data)  # 데이터 정규화
-        self.train = data  # train 데이터 설정
+        data = self.scaler.transform(data)
+        test_data = np.load(data_path + "/combined_syscall_onehot_encoded.npy")
+        self.test = self.scaler.transform(test_data)
+        self.train = data
         data_len = len(self.train)
-        self.val = self.train[(int)(data_len * 0.8):]  # validation 데이터는 train 데이터 일부 사용
+        self.val = self.train[(int)(data_len * 0.8):] # 여기는 추후 찐 Valid 데이터로 변경
+        self.test_labels = np.load(data_path + "/combined_syscall_labels.npy")
 
-        if mode == "train":
-            # 레이블을 로드하지 않음 (test_labels가 없음)
-            self.train_labels = np.zeros(len(self.train))  # train mode에서는 임의의 레이블 추가 (수정 가능)
 
     def __len__(self):
+
         if self.mode == "train":
             return (self.train.shape[0] - self.win_size) // self.step + 1
+        elif (self.mode == 'val'):
+            return (self.val.shape[0] - self.win_size) // self.step + 1
+        elif (self.mode == 'test'):
+            return (self.test.shape[0] - self.win_size) // self.step + 1
+        else:
+            return (self.test.shape[0] - self.win_size) // self.win_size + 1
 
     def __getitem__(self, index):
         index = index * self.step
         if self.mode == "train":
-            # train 데이터와 임의의 레이블 반환 (train_labels는 실제 데이터로 교체할 수 있음)
-            return np.float32(self.train[index:index + self.win_size]), np.float32(self.train_labels[index:index + self.win_size])
+            return np.float32(self.train[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
+        elif (self.mode == 'val'):
+            return np.float32(self.val[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
+        elif (self.mode == 'test'):
+            return np.float32(self.test[index:index + self.win_size]), np.float32(
+                self.test_labels[index:index + self.win_size])
+        else:
+            return np.float32(self.test[
+                              index // self.step * self.win_size:index // self.step * self.win_size + self.win_size]), np.float32(
+                self.test_labels[index // self.step * self.win_size:index // self.step * self.win_size + self.win_size])
 
 
 def get_loader_segment(data_path, batch_size, win_size=100, step=100, mode='train', dataset='KDD'):
