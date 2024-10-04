@@ -205,23 +205,26 @@ class MICROLoader(object):
         self.step = step
         self.win_size = win_size
         self.scaler = StandardScaler()
-        data = np.load(data_path + "/syscall_encoded_standardized.npy")
+        data = np.load(data_path + "/syscall_onehot_encoded.npy")  # 데이터 로드
         self.scaler.fit(data)
-        data = self.scaler.transform(data)
-        # test_data = np.load(data_path + "/MICRO_test.npy")
-        # self.test = self.scaler.transform(test_data)
-        self.train = data
+        data = self.scaler.transform(data)  # 데이터 정규화
+        self.train = data  # train 데이터 설정
         data_len = len(self.train)
-        self.val = self.train[(int)(data_len * 0.8):]
-        # self.test_labels = np.load(data_path + "/MICRO_test_label.npy")
+        self.val = self.train[(int)(data_len * 0.8):]  # validation 데이터는 train 데이터 일부 사용
+
+        if mode == "train":
+            # 레이블을 로드하지 않음 (test_labels가 없음)
+            self.train_labels = np.zeros(len(self.train))  # train mode에서는 임의의 레이블 추가 (수정 가능)
+
     def __len__(self):
         if self.mode == "train":
             return (self.train.shape[0] - self.win_size) // self.step + 1
-        
+
     def __getitem__(self, index):
         index = index * self.step
         if self.mode == "train":
-            return np.float32(self.train[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
+            # train 데이터와 임의의 레이블 반환 (train_labels는 실제 데이터로 교체할 수 있음)
+            return np.float32(self.train[index:index + self.win_size]), np.float32(self.train_labels[index:index + self.win_size])
 
 
 def get_loader_segment(data_path, batch_size, win_size=100, step=100, mode='train', dataset='KDD'):
