@@ -82,8 +82,19 @@ class Solver(object):
                                               mode='thre',
                                               dataset=self.dataset)
 
+        # GPU가 여러 개 있을 수 있으니 순차적으로 시도
+        for gpu_id in range(3):  # cuda:0, cuda:1, cuda:2까지 시도
+            try:
+                self.device = torch.device(f"cuda:{gpu_id}")
+                print(f"Trying GPU: cuda:{gpu_id}")
+                torch.cuda.set_device(self.device)
+                print(f"Using device: {self.device}")
+                break  # 성공하면 루프 종료
+            except Exception as e:
+                print(f"Failed to use cuda:{gpu_id}, trying next GPU.")
+                self.device = torch.device("cpu")  # 실패 시 CPU로 변경
+
         self.build_model()
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.criterion = nn.MSELoss()
 
     def build_model(self):

@@ -130,3 +130,7 @@ dmypy.json
 SMD/*
 Analysis.ipynb
 MICRO/*
+checkpoints/*
+SJ/*
+test.py
+data/*
